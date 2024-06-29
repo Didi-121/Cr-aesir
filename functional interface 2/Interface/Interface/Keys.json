@@ -1,0 +1,7 @@
+{
+  "Key.home" : 49,
+  "Key.page_down" : 50,
+  "Key.page_up": 51,
+  "Key.delete": 52,
+  "Key.backspace": 53
+}
