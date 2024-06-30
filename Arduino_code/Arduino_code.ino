@@ -1,4 +1,4 @@
-//Serial1 is used for comunication with raspberry pi while Serial is used for dynamixel shield
+//Serial1 is used for comunication with raspberry pi while Serial "0" is used by dynamixel shield
 //Pines 19 (RX) y 18 (TX)
 #include <DualG2HighPowerMotorShield.h>
 #include <DynamixelShield.h>
@@ -24,6 +24,7 @@ typedef struct Servos {
   //Servo that moves at the same time
   int mirrorServo;
 
+  //some servos doesnt have the same com protocol
   float protocol;
 
   //if it is connected with other servos 
@@ -285,7 +286,7 @@ void loop() {
               break;
 
             // The default command is for stop the servo 
-            default:
+            default: 
               id = hex(chopped);
 
               if( ! servos_list[id].mirroring ){
