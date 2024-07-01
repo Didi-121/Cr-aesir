@@ -8,14 +8,15 @@ import sys
 
 logging.basicConfig(level=logging.DEBUG, stream=sys.stdout, format='%(asctime)s %(levelname)s %(name)s: %(message)s')
 
+
 class Client:
-    def __init__(self, _HOST, _PORT, _username, JSONPATH, camera_function):
+    def __init__(self, _HOST, _PORT, _username, JSONPATH):
+
         self.logger = logging.getLogger(__name__)
 
         self.host = _HOST
         self.port = _PORT
         self.username = _username
-
         self.jsonPath = JSONPATH
         with open(self.jsonPath) as bruteKeys:
             self.os_keys = json.load(bruteKeys)
@@ -32,9 +33,6 @@ class Client:
         self.timeout = 30
         self.server_socket.settimeout(self.timeout)
 
-        self.camera_function = camera_function
-
-
     def try_conection(self):
 
         while True:
@@ -43,10 +41,26 @@ class Client:
                 self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 self.server_socket.connect((self.host, self.port))
 
-            except ConnectionRefusedError or ConnectionAbortedError or OSError:
+            except ConnectionRefusedError:
+                logging.warning("conection refused ")
                 self.conected = False
                 self.server_socket.close()
-                self.try_conection()
+                time.sleep(3)
+                continue
+
+            except  ConnectionAbortedError:
+                logging.warning("conection aborted ")
+                self.conected = False
+                self.server_socket.close()
+                time.sleep(3)
+                continue
+
+            except WindowsError:
+                logging.warning("No available host ")
+                self.conected = False
+                self.server_socket.close()
+                time.sleep(3)
+                continue
 
             comand = self.server_socket.recv(1024).decode()
 
@@ -116,23 +130,39 @@ class Client:
                         else:
                             self.camera_function(self.os_keys.get(key))
 
-
-
-                # the key wasnt used	we add it to the list
+                # the key wasnt used we add it to the list
                 else:
                     self.KEYS[0].append(key)
                     self.KEYS[1].append(True)
 
                     message_destiny = self.os_keys.get(key)
 
-                    if not message_destiny == "os":
+                    if message_destiny == "os":
+                        logging.debug("somethin in the laptop")
+
+                    else:
                         message = 'T'
                         message += key
                         message = message.encode()
                         self.server_socket.send(message)
                         logging.debug(message)
 
-        except ConnectionResetError or ConnectionAbortedError:
+        except ConnectionRefusedError:
+            logging.warning("conection refused ")
+            self.conected = False
+            self.server_socket.close()
+            self.try_conection()
+
+
+        except  ConnectionAbortedError:
+            logging.warning("conection aborted ")
+            self.conected = False
+            self.server_socket.close()
+            self.try_conection()
+
+
+        except WindowsError:
+            logging.warning("No available host ")
             self.conected = False
             self.server_socket.close()
             self.try_conection()
@@ -156,9 +186,7 @@ class Client:
                     pressedKey = self.KEYS[0].index(key)
                     self.KEYS[1][pressedKey] = False
 
-
-
-                    if not self.os_keys.get(key) :
+                    if not self.os_keys.get(key):
                         message = 'F'
                         message += key
                         message = message.encode()
@@ -167,12 +195,23 @@ class Client:
                     else:
                         pass
 
+        except ConnectionRefusedError:
+            logging.warning("conection refused ")
+            self.conected = False
+            self.server_socket.close()
+            self.try_conection()
 
-        except ConnectionResetError or ConnectionAbortedError:  # ConnectionResetError
-            while True:
-                self.conected = False
-                self.server_socket.close()
-                self.try_conection()
+        except  ConnectionAbortedError:
+            logging.warning("conection aborted ")
+            self.conected = False
+            self.server_socket.close()
+            self.try_conection()
+
+        except WindowsError:
+            logging.warning("No available host ")
+            self.conected = False
+            self.server_socket.close()
+            self.try_conection()
 
     def main(self):
 
@@ -181,7 +220,3 @@ class Client:
         if self.conected:
             with kb.Listener(self.press, self.release) as listener:
                 listener.join()
-
-
-
-
