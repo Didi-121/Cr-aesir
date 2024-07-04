@@ -1,7 +1,8 @@
-//Serial1 is used for comunication with raspberry pi while Serial "0" is used by dynamixel shield
+//Serial1 is used for comunication with raspberry pi while Serial is used for dynamixel shield
 //Pines 19 (RX) y 18 (TX)
 #include <DualG2HighPowerMotorShield.h>
 #include <DynamixelShield.h>
+#include <Adafruit_SCD30.h>
 
 DynamixelShield dxl;
 //This namespace is required to use Control table item names
@@ -24,7 +25,6 @@ typedef struct Servos {
   //Servo that moves at the same time
   int mirrorServo;
 
-  //some servos doesnt have the same com protocol
   float protocol;
 
   //if it is connected with other servos 
@@ -35,22 +35,25 @@ typedef struct Servos {
 
 };
 
-Servos servo0 = {0, 1130, 3243, 4, 1, 1.0, false, false, OP_POSITION};
-Servos servo1 = {1, 2745, 631, 3, NULL, 1.0,  false, false, OP_POSITION };
-Servos servo2 = {2, 3830, 1794, 3, NULL, 1.0, false, false, OP_POSITION };
+Servos servo0 = {0, 1104, 3243, 4, 1, 1.0, false, false, OP_POSITION};
+Servos servo1 = {1, 2808, 631, 3, NULL, 1.0,  false, false, OP_POSITION };
+Servos servo2 = {2, 3553, 1467, 3, NULL, 1.0, false, false, OP_POSITION };
 
-Servos servo3 = {4, 792, 222 , 2, 4, 1.0, false, false, OP_POSITION };
-Servos servo4 = {3, 231, 801, 1, NULL, 1.0, false, false, OP_POSITION };
+Servos servo3 = {3, 792, 210 , 2, 4, 1.0, false, false, OP_POSITION };
+Servos servo4 = {4, 557, 801, 1, NULL, 1.0, false, false, OP_POSITION };
 
-Servos servo5 = {5, 227, 1000, 1, 6, 1.0, true, false, OP_POSITION };
-Servos servo6 = {6, 796, 207, 2, NULL, 1.0, false, false, OP_POSITION };
+Servos servo5 = {5, 227, 806, 1, 6, 1.0, true, false, OP_POSITION };
+Servos servo6 = {6, 796, 208, 2, NULL, 1.0, false, false, OP_POSITION };
 
 Servos servo7 = {7, 1023, 222, 1, NULL, 1.0, false, false, OP_POSITION };
 
-Servos servo8 = {8, 0, 4000, 1, NULL, 2.0, false, false, OP_POSITION };
-Servos servo9 = {9, 9868, 2411, 1, NULL, 2.0, false, false, OP_CURRENT_BASED_POSITION };
+Servos servo8 = {8, 0, 0, 1, NULL, 1.0, false, false, OP_VELOCITY };
 
-Servos servos_list[10] = {servo0, servo1, servo2, servo3, servo4, servo5, servo6, servo7, servo8, servo9};
+//Id 4 : 557
+//Id  9: 1096
+
+
+Servos servos_list[10] = {servo0, servo1, servo2, servo3, servo4, servo5, servo6, servo7, servo8};
 
 //String used to store mesagges from the raspberry pi 
 String received, chopped, information_tosend;
@@ -58,17 +61,21 @@ String received, chopped, information_tosend;
 //ints used to control the servos
 int id, mirrorID, position, mirrorPosition, ctrlTableItem;
 int servoSpeed = 121;
+int servo_speed_counter = 0;
+float dxl_protocol;
 
 DualG2HighPowerMotorShield18v22 pololuDriver;
 //speed of pololu driver 0-400 
 int dcSpeed = 400; 
+int dc_speed_counter = 0;
 
-float dxl_protocol;
+
+Adafruit_SCD30  scd30;
 
 void setup() {
 
   //serial1 is used for communication with the raspberry pi
-  Serial1.begin(9600);
+  Serial1.begin(115200);
   Serial1.setTimeout(5);
   
   // Set Port baudrate to  1M this has to match with DYNAMIXEL's servos baud rate 
@@ -83,6 +90,13 @@ void setup() {
   delay(10);
   //flip a motor's direction:
   pololuDriver.flipM1(true);
+
+  if (!scd30.begin()) {
+    Serial1.println("w: Failed to find SCD30 chip");
+  }
+  Serial1.println("w: SCD30 Found!");
+
+  Serial.print("i: Measurement Interval: " + String(scd30.getMeasurementInterval()) + " seconds"); 
 
 }
 
@@ -171,8 +185,12 @@ void loop() {
               if( ! servos_list[id].mirroring  ){
 
                 writeServo(MOVING_SPEED, id, servoSpeed);
+                if(id == 8){
+                  dxl.setGoalVelocity(id, 500);
+                  break;
+                }
+
                 writeServo(GOAL_POSITION, id, servos_list[id].cw_limit);
-                Serial1.println("jalo");
 
               }else{
 
@@ -181,7 +199,6 @@ void loop() {
                 writeServo(MOVING_SPEED, mirrorID , servoSpeed);
                 writeServo(GOAL_POSITION, id , servos_list[id].cw_limit);
                 writeServo(GOAL_POSITION, mirrorID, servos_list[mirrorID].cw_limit);
-                Serial1.println("jalo");
      
               }
               break;
@@ -194,6 +211,13 @@ void loop() {
               if( ! servos_list[id].mirroring ){
 
                 writeServo(MOVING_SPEED, id, servoSpeed);
+                writeServo(MOVING_SPEED, id, servoSpeed);
+
+                if(id == 8){
+                  dxl.setGoalVelocity(id, 1700 );
+                  break;
+                }
+
                 writeServo(GOAL_POSITION, id, servos_list[id].ccw_limit);
 
               }else{
@@ -245,7 +269,7 @@ void loop() {
                     break;
 
                     default:
-                    Serial1.print("e: directiontype isnt recognized");
+                    Serial1.print("d: directiontype isnt recognized");
                     break;
                   }
                   
@@ -258,41 +282,20 @@ void loop() {
               }
               break;
 
-            // R is for reading servo info 
-            case 'R':
-              chopped.remove(0, 1);
-              ctrlTableItem = hex(chopped);
-
-              if(chopped.substring(0) == "" ){
-
-                for( id = 0; id <= sizeof(servos_list) ; id++ ){
-
-                  information_tosend = readServo(PRESENT_POSITION, id);
-                  if (information_tosend);
-                  Serial1.println("i: id " + String(id) + " " + information_tosend );
-
-                }
-
-              }else{
-
-                id = hex(chopped);
-                readServo(ctrlTableItem, id);
-                
-                information_tosend = readServo(ctrlTableItem, id);
-                if (information_tosend);
-                Serial1.println("i: id: " + String(id) + " " + information_tosend );
-
-              }
-              break;
-
             // The default command is for stop the servo 
-            default: 
+            default:
               id = hex(chopped);
 
               if( ! servos_list[id].mirroring ){
 
+                if(id == 8){
+                  dxl.setGoalVelocity(id, 0);
+                  break;
+                }
+
                 position = readServo(PRESENT_POSITION, id);
                 writeServo(GOAL_POSITION, id, position);
+                
 
               }else {
 
@@ -305,45 +308,80 @@ void loop() {
               }
               break;
           }
-          break;
 
         //V is for changing variables   
         case 'V':
-        chopped.remove(0,1);
-
-        switch (chopped[0]) {
-
-          case 'Z':
           chopped.remove(0,1);
-          dcSpeed = 255;
-          break;
 
-          case 'X':
-          chopped.remove(0,1);
-          dcSpeed = 150;
-          break;
+          switch (chopped[0]) {
 
-          case 'K':
-          chopped.remove(0,1);
-          dcSpeed = 64;
-          break;
+            case 'M':
+              chopped.remove(0,1);
+              Serial1.println("d: mirroring");
+              if (servos_list[0].mirroring) {
+                servos_list[0].mirroring = false;
+              }else{
+                servos_list[0].mirroring = true;
+              }
+            break;
 
-          case 'B':
-          chopped.remove(0,1);
-          servos_list[0].mirroring = true;
-          break;
+            case 'V':
+              chopped.remove(0,1);
+              if( ! dc_speed_counter ){
+                dc_speed_counter += 1;
+                dcSpeed = 300;
+                break;
+              }else if(dc_speed_counter = 1){
+                dc_speed_counter += 1;
+                dcSpeed = 150;
+                break;
+              }else{
+                dc_speed_counter = 0;
+                dcSpeed = 400;
+                break;
+              }
 
-          case 'N':
-          chopped.remove(0,1);
-          //servos_list[0].mirroring = false;
-          break;
+            case 'S':
+              chopped.remove(0,1);
+              if( ! servo_speed_counter ){
+                dc_speed_counter += 1;
+                servoSpeed = 200;
+                break;
+              }else if(dc_speed_counter = 1){
+                dc_speed_counter += 1;
+                servoSpeed = 300;
+                break;
+              }else{
+                dc_speed_counter = 0;
+                servoSpeed = 121;
+                break;
+              }
+            break;
 
+            case 'T': 
+            chopped.remove(0,1);
+            if (!scd30.read()){ Serial1.println("w: Error reading sensor data"); break; }
+
+            Serial1.print("i: Temperature: " + String(scd30.temperature) + " c");
+            Serial1.println("");
+
+            Serial1.print("i: CO2: " + String(scd30.CO2, 3) + " ppm");
+            Serial1.println("");
+            
+            Serial1.print("i: Relative Humidity: " + String(scd30.relative_humidity) + " %");
+            Serial1.println();
+            
+            break;
+
+            case 'R':
+            asm volatile ("jmp 0x00");
+            break;
+
+          }
         }
-      }
     }
   }
 }
-
 
 
 void servoSetup(uint8_t id){
@@ -363,7 +401,7 @@ void servoSetup(uint8_t id){
   dxl.setOperatingMode(id, opmode );
   dxl.torqueOn(id);
 
-  if(id == 9)
+  if(id == 8)
   dxl.setGoalCurrent(id , 900);
   
 }
@@ -473,18 +511,17 @@ String chopper(String& comand, char cut){
   return temporal;
 }
 
-void stopIfFault()
-{
+void stopIfFault(){
   if (pololuDriver.getM1Fault())
   {
     pololuDriver.disableDrivers();
     delay(1);
-    Serial1.println("e: M1 fault");
+    Serial1.println("w: M1 fault");
   }
   if (pololuDriver.getM2Fault())
   {
     pololuDriver.disableDrivers();
     delay(1);
-    Serial1.println("e: M2 fault");
+    Serial1.println("w: M2 fault");
   }
 }
