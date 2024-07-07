@@ -35,12 +35,12 @@ typedef struct Servos {
 
 };
 
-Servos servo0 = {0, 1104, 3243, 4, 1, 1.0, false, false, OP_POSITION};
-Servos servo1 = {1, 2808, 631, 3, NULL, 1.0,  false, false, OP_POSITION };
-Servos servo2 = {2, 3553, 1467, 3, NULL, 1.0, false, false, OP_POSITION };
+Servos servo0 = {0, 968, 2792, 4, 1, 1.0, false , false, OP_POSITION};
+Servos servo1 = {1, 2909 , 1114, 4, NULL, 1.0,  false, false, OP_POSITION };
+Servos servo2 = {2, 3724, 1746, 3, NULL, 1.0, false, false, OP_POSITION };
 
-Servos servo3 = {3, 792, 210 , 2, 4, 1.0, false, false, OP_POSITION };
-Servos servo4 = {4, 557, 801, 1, NULL, 1.0, false, false, OP_POSITION };
+Servos servo3 = {3, 196, 815 , 2, 4, 1.0, true, false, OP_POSITION };
+Servos servo4 = {4, 826, 202, 1, NULL, 1.0, false, false, OP_POSITION };
 
 Servos servo5 = {5, 227, 806, 1, 6, 1.0, true, false, OP_POSITION };
 Servos servo6 = {6, 796, 208, 2, NULL, 1.0, false, false, OP_POSITION };
@@ -48,9 +48,6 @@ Servos servo6 = {6, 796, 208, 2, NULL, 1.0, false, false, OP_POSITION };
 Servos servo7 = {7, 1023, 222, 1, NULL, 1.0, false, false, OP_POSITION };
 
 Servos servo8 = {8, 0, 0, 1, NULL, 1.0, false, false, OP_VELOCITY };
-
-//Id 4 : 557
-//Id  9: 1096
 
 
 Servos servos_list[10] = {servo0, servo1, servo2, servo3, servo4, servo5, servo6, servo7, servo8};
