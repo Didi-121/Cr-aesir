@@ -5,12 +5,13 @@ import json
 import logging
 import sys
 import os
+import threading
 
 logging.basicConfig(level=logging.DEBUG, stream=sys.stdout, format='%(asctime)s %(levelname)s %(name)s: %(message)s')
 
 
 class Client:
-    def __init__(self, _HOST, _PORT, _username, x ):
+    def __init__(self, _HOST, _PORT, _username, camfunc):
 
         self.logger = logging.getLogger(__name__)
 
@@ -36,7 +37,7 @@ class Client:
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.timeout = 30
         self.server_socket.settimeout(self.timeout)
-        self.camera_function = x
+        self.camera_function = camfunc
 
     def try_conection(self):
 
@@ -156,21 +157,23 @@ class Client:
             logging.warning("conection refused ")
             self.conected = False
             self.server_socket.close()
-            self.try_conection()
+            self.listener.stop()
+
+
 
 
         except  ConnectionAbortedError:
             logging.warning("conection aborted ")
             self.conected = False
             self.server_socket.close()
-            self.try_conection()
+            self.listener.stop()
 
 
         except WindowsError:
             logging.warning("No available host ")
             self.conected = False
             self.server_socket.close()
-            self.try_conection()
+            self.listener.stop()
 
     # this function start when a key is released
     def release(self, key):
@@ -203,19 +206,19 @@ class Client:
         except ConnectionRefusedError:
             logging.warning("conection refused ")
             self.conected = False
-            self.server_socket.close()
+            self.listener.stop()
             
 
         except  ConnectionAbortedError:
             logging.warning("conection aborted ")
             self.conected = False
-            self.server_socket.close()
+            self.listener.stop()
             
 
         except WindowsError:
             logging.warning("No available host ")
             self.conected = False
-            self.server_socket.close()
+            self.listener.stop()
             
 
     def main(self):
@@ -223,5 +226,8 @@ class Client:
         self.try_conection()
 
         if self.conected:
-            with kb.Listener(self.press, self.release) as listener:
-                listener.join()
+            with kb.Listener(self.press, self.release) as self.listener:
+                self.listener.join()
+
+        logging.warning("Control_service main loop was disconnected")
+        return False
