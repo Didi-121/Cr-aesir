@@ -1,24 +1,24 @@
 import socket
 import time
 from pynput import keyboard as kb
+import socket
 import json
 import logging
 import sys
 import os
-import threading
 
 logging.basicConfig(level=logging.DEBUG, stream=sys.stdout, format='%(asctime)s %(levelname)s %(name)s: %(message)s')
 
 
 class Client:
-    def __init__(self, _HOST, _PORT, _username, camfunc):
+    def __init__(self, _HOST, _PORT, _username, x):
 
         self.logger = logging.getLogger(__name__)
 
         self.host = _HOST
         self.port = _PORT
         self.username = _username
-        
+
         actual_path = os.path.dirname(os.path.abspath(__file__))
         file_name = "keys.json"
         self.json_path = os.path.join(actual_path, file_name)
@@ -37,7 +37,7 @@ class Client:
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.timeout = 30
         self.server_socket.settimeout(self.timeout)
-        self.camera_function = camfunc
+        self.camera_function = x
 
     def try_conection(self):
 
@@ -157,23 +157,21 @@ class Client:
             logging.warning("conection refused ")
             self.conected = False
             self.server_socket.close()
-            self.listener.stop()
-
-
+            self.try_conection()
 
 
         except  ConnectionAbortedError:
             logging.warning("conection aborted ")
             self.conected = False
             self.server_socket.close()
-            self.listener.stop()
+            self.try_conection()
 
 
         except WindowsError:
             logging.warning("No available host ")
             self.conected = False
             self.server_socket.close()
-            self.listener.stop()
+            self.try_conection()
 
     # this function start when a key is released
     def release(self, key):
@@ -206,28 +204,24 @@ class Client:
         except ConnectionRefusedError:
             logging.warning("conection refused ")
             self.conected = False
-            self.listener.stop()
-            
+            self.server_socket.close()
+
 
         except  ConnectionAbortedError:
             logging.warning("conection aborted ")
             self.conected = False
-            self.listener.stop()
-            
+            self.server_socket.close()
+
 
         except WindowsError:
             logging.warning("No available host ")
             self.conected = False
-            self.listener.stop()
-            
+            self.server_socket.close()
 
     def main(self):
 
         self.try_conection()
 
         if self.conected:
-            with kb.Listener(self.press, self.release) as self.listener:
-                self.listener.join()
-
-        logging.warning("Control_service main loop was disconnected")
-        return False
+            with kb.Listener(self.press, self.release) as listener:
+                listener.join()
