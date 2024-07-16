@@ -34,7 +34,9 @@ class Application(tk.Tk):
 
         self.aClient = Audio_client(HOST, APORT)
         self.audioTrhead = threading.Thread(target=self.aClient.audio_stream_input_UDP, args=())
+        self.audioTrhead2 = threading.Thread(target=self.aClient.live_audio, args=())
         self.audioTrhead.start()
+        self.audioTrhead2.start()
 
         #Set up widgets
         self.create_widgets()
@@ -60,11 +62,25 @@ class Application(tk.Tk):
         self.connection_button.place(x=40, y=40, width=100, height=30)
 
         #Audio client
+        self.livea_button = tk.Button(self, text="Listen", fg="gold", bg="black")
+        self.livea_button.place(x=40, y=120, width=100, height=30)
+        
+        self.livea_button.bind('<ButtonPress-1>', self.aClient.a_live_on)
+        self.livea_button.bind('<ButtonRelease-1>', self.aClient.a_live_off)
+
+        self.speakbut = tk.Button(self, text="Hear", fg="gold", bg="black")
+        self.speakbut.place(x=40, y=80, width=100, height=30)
+
+        self.speakbut.bind('<ButtonPress-1>', self.aClient.audio_On)
+        self.speakbut.bind('<ButtonRelease-1>', self.aClient.audio_Off)
+
+        """
         self.audioOn = tk.Button(self, text="Audio on", fg="gold", bg="black", command= self.aClient.audio_On)
         self.audioOn.place(x=40, y=80, width=100, height=30)
 
         self.audioOff = tk.Button(self, text="Audio off", fg="gold", bg="black", command= self.aClient.audio_Off)
         self.audioOff.place(x=40, y=120, width=100, height=30)
+        """
 
     def onClose(self):
         self.quit()
@@ -73,7 +89,6 @@ class Application(tk.Tk):
         #Start the client thread
         self.server_thread = threading.Thread(target=self.client.main)
         self.server_thread.start()
-
 
 #Initialize the application
 app = Application()
