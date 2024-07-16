@@ -1,12 +1,13 @@
 import tkinter as tk
+import time
 import threading
+import cv2
+import numpy as np
 from camera import Camera
 from PIL import Image
 from PIL import ImageTk
-import cv2
-import numpy as np
 from Control_Service import Client
-import time
+from audio_client import Audio_client
 
 #Server configuration
 HOST = "169.254.111.111"
@@ -14,6 +15,8 @@ PORT = 5555
 JSONPATH = 'Keys.json'
 username = "aesir"
 
+IPRASPB = '169.254.111.111'
+APORT = 5554
 
 class Application(tk.Tk):
 
@@ -28,6 +31,10 @@ class Application(tk.Tk):
         #Create the main frame with a gray background
         self.mainFrame = tk.Frame(self, background="gray")
         self.mainFrame.pack(fill="both", expand=True)
+
+        self.aClient = Audio_client(HOST, APORT)
+        self.audioTrhead = threading.Thread(target=self.aClient.audio_stream_input_UDP, args=())
+        self.audioTrhead.start()
 
         #Set up widgets
         self.create_widgets()
@@ -51,6 +58,13 @@ class Application(tk.Tk):
         #Server connection button
         self.connection_button = tk.Button(self, text="Connection Button", fg="gold", bg="black", command=self.server)
         self.connection_button.place(x=40, y=40, width=100, height=30)
+
+        #Audio client
+        self.audioOn = tk.Button(self, text="Audio on", fg="gold", bg="black", command= self.aClient.audio_On)
+        self.audioOn.place(x=40, y=80, width=100, height=30)
+
+        self.audioOff = tk.Button(self, text="Audio off", fg="gold", bg="black", command= self.aClient.audio_Off)
+        self.audioOff.place(x=40, y=120, width=100, height=30)
 
     def onClose(self):
         self.quit()
